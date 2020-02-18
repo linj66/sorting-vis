@@ -108,7 +108,6 @@ def mergesort(xs):  # https://en.wikipedia.org/wiki/Merge_sort
             yield xs + [[start + i]]
         
 
-
     def mergesort_runner(xs, start, end):       
         if end - start <= 1:
             return
@@ -124,15 +123,15 @@ def mergesort(xs):  # https://en.wikipedia.org/wiki/Merge_sort
 
 
 # ---RUNNER---
-def vis_algorithm(algorithm, xs, *args, **kwargs):
-
+def vis_algorithm(algorithm, n, seed=True, *args, **kwargs):
+    xs = generate_numbers(n)
     title = algorithm.__name__.replace('_', ' ').title()
     generator = algorithm(xs)
 
     fig, ax = plt.subplots()
     ax.set_title(title, color='white')
     bars = ax.bar(range(len(xs) - 1), xs[:-1], align='edge', color='#01B8C6')
-    text = ax.text(0, 0.95, '', transform=ax.transAxes, color='white')
+    text = ax.text(0, 0.975, '', transform=ax.transAxes, color='white')
     ax.axis('off')
     fig.patch.set_facecolor('#151231')
 
