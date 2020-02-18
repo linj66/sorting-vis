@@ -78,6 +78,7 @@ def shellsort(xs):  # https://en.wikipedia.org/wiki/Shellsort
             yield xs + [[i, j]]
     yield xs + [[]]
 
+
 def mergesort(xs):  # https://en.wikipedia.org/wiki/Merge_sort
     def merge(xs, start, mid, end):
         merged = list()
@@ -107,7 +108,6 @@ def mergesort(xs):  # https://en.wikipedia.org/wiki/Merge_sort
             xs[start + i] = val
             yield xs + [[start + i]]
         
-
     def mergesort_runner(xs, start, end):       
         if end - start <= 1:
             return
@@ -122,15 +122,49 @@ def mergesort(xs):  # https://en.wikipedia.org/wiki/Merge_sort
     yield xs + [[]]
 
 
+def quicksort(xs):  # https://en.wikipedia.org/wiki/Quicksort
+    # Hoare partition scheme
+    def partition(xs, lo, hi):
+        pivot_idx = (lo + hi) // 2
+        pivot = xs[pivot_idx]
+        i = lo - 1
+        j = hi + 1
+        while True:
+            i += 1
+            while xs[i] < pivot:
+                yield xs + [[i, pivot_idx]]
+                i += 1
+            yield  xs + [[i, pivot_idx]]
+            j -= 1
+            while xs[j] > pivot:
+                yield xs + [[j, pivot_idx]]
+                j -= 1
+            yield xs + [[j, pivot_idx]]
+            if i >= j:
+                yield xs + [[i, j]]
+                return j
+            xs[i], xs[j] = xs[j], xs[i]
+            yield xs + [[i, j]]
+
+    def quicksort_runner(xs, lo, hi):
+        if lo < hi:
+            p = yield from partition(xs, lo, hi)
+            yield from quicksort_runner(xs, lo, p)
+            yield from quicksort_runner(xs, p + 1, hi)
+
+    yield from quicksort_runner(xs, 0, len(xs) - 1)
+    yield xs + [[]]
+
+
 # ---RUNNER---
-def vis_algorithm(algorithm, n, seed=True, *args, **kwargs):
+def vis_algorithm(algorithm, n, interval=1, seed=True, *args, **kwargs):
     xs = generate_numbers(n)
     title = algorithm.__name__.replace('_', ' ').title()
     generator = algorithm(xs)
 
     fig, ax = plt.subplots()
     ax.set_title(title, color='white')
-    bars = ax.bar(range(len(xs) - 1), xs[:-1], align='edge', color='#01B8C6')
+    bars = ax.bar(range(len(xs) - 1), xs[:-1], align='edge', color='#01b8c6')
     text = ax.text(0, 0.975, '', transform=ax.transAxes, color='white')
     ax.axis('off')
     fig.patch.set_facecolor('#151231')
@@ -147,7 +181,7 @@ def vis_algorithm(algorithm, n, seed=True, *args, **kwargs):
             if i in xs[-1]:
                 rect.set_color('#f79ce7')
             else:
-                rect.set_color('#01B8C6')
+                rect.set_color('#01b8c6')
             operations += 1
         text.set_text(
             f'n = {len(xs) - 1}\n\
@@ -155,6 +189,6 @@ def vis_algorithm(algorithm, n, seed=True, *args, **kwargs):
 time elapsed: {format(time.time() - start, ".3f")}s')
 
     anim = animation.FuncAnimation(fig, func=update_fig, fargs=(bars, start),
-        frames=generator, interval=1, repeat=False)
+        frames=generator, interval=interval, repeat=False)
     
     plt.show()
