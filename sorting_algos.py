@@ -156,6 +156,70 @@ def quicksort(xs):  # https://en.wikipedia.org/wiki/Quicksort
     yield xs + [[]]
 
 
+def heapsort(xs):  # https://en.wikipedia.org/wiki/Heapsort
+    def max_heapify(xs, i, end):
+        
+        left = 2 * i + 1
+        right = 2 * i + 2
+        largest = i
+
+        if left < end and xs[left] > xs[largest]:
+            largest = left
+        yield xs + [[left, largest]]
+
+        if right < end and xs[right] > xs[largest]:
+            largest = right
+        yield xs + [[right, largest]]
+
+        if largest != i:
+            xs[i], xs[largest] = xs[largest], xs[i]
+            yield xs + [[i, largest]]
+            yield from max_heapify(xs, largest, end)
+        yield xs + [[i]]
+
+    def build_heap(xs):
+        for i in range(len(xs) // 2, -1, -1):
+            yield from max_heapify(xs, i, len(xs))
+
+    def sift_down(xs, start, end):
+        root = start
+        while root * 2 + 1 <= end:
+            child = root * 2 + 1
+            swap = root
+
+            if xs[swap] < xs[child]:
+                yield xs + [[swap, child]]
+                swap = child
+            yield xs + [[swap, child]]
+
+            
+            if child + 1 <= end and xs[swap] < xs[child + 1]:
+                yield xs + [[swap, child + 1]]
+                swap = child + 1
+            yield xs + [[swap, child + 1]]
+
+            yield xs + [[swap, root]]
+            if swap == root:
+                return
+            else:
+                xs[root], xs[swap] = xs[swap], xs[root]
+                root = swap
+
+    def heapsort_runner(xs):
+        yield from build_heap(xs)
+        end = len(xs) - 1
+
+        while end > 0:
+            xs[end], xs[0] = xs[0], xs[end]
+            yield xs + [[0, end]]
+            end -= 1
+            yield from sift_down(xs, 0, end)
+
+    yield from heapsort_runner(xs)
+    yield xs + [[]]
+
+
+
 # ---RUNNER---
 def vis_algorithm(algorithm, n, interval=1, seed=True, *args, **kwargs):
     xs = generate_numbers(n)
@@ -164,7 +228,7 @@ def vis_algorithm(algorithm, n, interval=1, seed=True, *args, **kwargs):
 
     fig, ax = plt.subplots()
     ax.set_title(title, color='white')
-    bars = ax.bar(range(len(xs) - 1), xs[:-1], align='edge', color='#01b8c6')
+    bars = ax.bar(range(len(xs)), xs, align='edge', color='#01b8c6')
     text = ax.text(0, 0.975, '', transform=ax.transAxes, color='white')
     ax.axis('off')
     fig.patch.set_facecolor('#151231')
@@ -172,8 +236,6 @@ def vis_algorithm(algorithm, n, interval=1, seed=True, *args, **kwargs):
     start = time.time()
     operations = 0
     def update_fig(xs, rects, start):
-        # print(xs)
-
         nonlocal operations
         for i, tup in enumerate(zip(rects, xs)):
             rect, val = tup
