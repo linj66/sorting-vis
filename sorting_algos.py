@@ -52,15 +52,18 @@ def selection_sort(xs):  # https://en.wikipedia.org/wiki/Selection_sort
 
 
 def insertion_sort(xs):  # https://en.wikipedia.org/wiki/Insertion_sort
-    for i in range(1, len(xs)):
-        j = i
-        while j > 0 and xs[j] < xs[j - 1]:
-            xs[j - 1], xs[j] = xs[j], xs[j - 1]
+    i = 1
+    while i < len(xs):
+        x = xs[i]
+        j = i - 1
+        while j >= 0 and xs[j] > x:
+            yield xs + [[j, j + 1]]
+            xs[j + 1] = xs[j]
             j -= 1
-            yield xs + [[j, j - 1]]
-        yield xs + [[j, j - 1]]
+        yield xs + [[i, j + 1]]
+        xs[j + 1] = x
+        i += 1
     yield xs + [[]]
-
 
 def shellsort(xs):  # https://en.wikipedia.org/wiki/Shellsort
     # Marcin Ciura's gap sequence (https://oeis.org/A102549)
@@ -220,6 +223,11 @@ def heapsort(xs):  # https://en.wikipedia.org/wiki/Heapsort
     yield xs + [[]]
 
 
+def timsort(xs):
+    if len(xs) <= 64:
+        insertion_sort(xs)
+    else:
+        pass
 
 # ---RUNNER---
 def vis_algorithm(algorithm, n, interval=1, seed=True, *args, **kwargs):
