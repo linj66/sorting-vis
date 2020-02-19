@@ -41,8 +41,9 @@ def selection_sort(xs):  # https://en.wikipedia.org/wiki/Selection_sort
         min_idx = i
         for j in range(i + 1, len(xs)):
             if xs[j] < xs[min_idx]:
-                min_idx = j
                 yield xs + [[j, min_idx]]
+                min_idx = j
+            yield xs + [[j, min_idx]]
         if min_idx != i:
             xs[min_idx], xs[i] = xs[i], xs[min_idx]            
             yield xs + [[i, min_idx]]
@@ -165,15 +166,15 @@ def heapsort(xs):  # https://en.wikipedia.org/wiki/Heapsort
 
         if left < end and xs[left] > xs[largest]:
             largest = left
-        yield xs + [[left, largest]]
+        # yield xs + [[left, largest]]
 
         if right < end and xs[right] > xs[largest]:
             largest = right
-        yield xs + [[right, largest]]
+        # yield xs + [[right, largest]]
 
         if largest != i:
             xs[i], xs[largest] = xs[largest], xs[i]
-            yield xs + [[i, largest]]
+            # yield xs + [[i, largest]]
             yield from max_heapify(xs, largest, end)
         yield xs + [[i]]
 
@@ -188,21 +189,21 @@ def heapsort(xs):  # https://en.wikipedia.org/wiki/Heapsort
             swap = root
 
             if xs[swap] < xs[child]:
-                yield xs + [[swap, child]]
+                # yield xs + [[swap, child]]
                 swap = child
             yield xs + [[swap, child]]
 
             
             if child + 1 <= end and xs[swap] < xs[child + 1]:
-                yield xs + [[swap, child + 1]]
+                # yield xs + [[swap, child + 1]]
                 swap = child + 1
             yield xs + [[swap, child + 1]]
 
-            yield xs + [[swap, root]]
             if swap == root:
                 return
             else:
                 xs[root], xs[swap] = xs[swap], xs[root]
+                yield xs + [[swap, root]]
                 root = swap
 
     def heapsort_runner(xs):
