@@ -65,6 +65,38 @@ def insertion_sort(xs):  # https://en.wikipedia.org/wiki/Insertion_sort
         i += 1
     yield xs + [[]]
 
+
+def binary_insertion_sort(xs):  # https://en.wikipedia.org/wiki/Insertion_sort
+    def binary_search(xs, target, start, end):
+        if start >= end:
+            if start > end or xs[start] > target:
+                yield xs + [[start]]
+                return start
+            else:
+                yield xs + [[start + 1]]
+                return start + 1
+            yield xs + [[start, end]]
+
+        mid = (start + end) // 2
+
+        yield xs + [[mid]]
+        if xs[mid] < target:
+            result = yield from binary_search(xs, target, mid + 1, end)
+            return result
+        elif xs[mid] > target:
+            result = yield from binary_search(xs, target, start, mid - 1)
+            return result
+        else:
+            return mid
+
+    for i in range(1, len(xs)):
+        swap = yield from binary_search(xs, xs[i], 0, i - 1)
+        yield xs + [[i, swap]]
+        xs = xs[:swap] + [xs[i]] + xs[swap:i] + xs[i + 1:]
+    yield xs + [[]]
+
+        
+
 def shellsort(xs):  # https://en.wikipedia.org/wiki/Shellsort
     # Marcin Ciura's gap sequence (https://oeis.org/A102549)
     gaps = [gap for gap in [701, 301, 132, 57, 23, 10, 4, 1] if gap < len(xs)]
@@ -224,7 +256,8 @@ def heapsort(xs):  # https://en.wikipedia.org/wiki/Heapsort
 
 
 def timsort(xs):
-    if len(xs) <= 64:
+    MINRUN = 32
+    if len(xs) <= MINRUN:
         insertion_sort(xs)
     else:
         pass
@@ -245,6 +278,8 @@ def vis_algorithm(algorithm, n, interval=1, seed=True, *args, **kwargs):
     start = time.time()
     operations = 0
     def update_fig(xs, rects, start):
+        if len(xs) > 10000:
+            raise SystemExit
         nonlocal operations
         for i, tup in enumerate(zip(rects, xs)):
             rect, val = tup
