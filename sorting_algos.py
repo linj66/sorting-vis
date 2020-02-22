@@ -1,5 +1,6 @@
 import random
 import time
+import math
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -255,7 +256,76 @@ def heapsort(xs):  # https://en.wikipedia.org/wiki/Heapsort
     yield xs + [[]]
 
 
-def timsort(xs):
+def introsort(xs, insertion_threshold=16):  # https://en.wikipedia.org/wiki/Introsort
+    def binary_insertion_sort(xs, lo, hi):  # insertion sort routine for introsort
+        def binary_search(xs, target, start, end):
+            if start >= end:
+                if start > end or xs[start] > target:
+                    yield xs + [[start]]
+                    return start
+                else:
+                    yield xs + [[start + 1]]
+                    return start + 1
+                yield xs + [[start, end]]
+
+            mid = (start + end) // 2
+
+            yield xs + [[mid]]
+            if xs[mid] < target:
+                result = yield from binary_search(xs, target, mid + 1, end)
+                return result
+            elif xs[mid] > target:
+                result = yield from binary_search(xs, target, start, mid - 1)
+                return result
+            else:
+                return mid
+
+        for i in range(lo, hi):
+            swap = yield from binary_search(xs, xs[i], lo, i - 1)
+            yield xs + [[i, swap]]
+            xs = xs[:swap] + [xs[i]] + xs[swap:i] + xs[i + 1:]
+        yield xs + [[]]
+        return xs
+
+    def partition(xs, lo, hi):
+        pivot_idx = (lo + hi) // 2
+        pivot = xs[pivot_idx]
+        i = lo - 1
+        j = hi + 1
+        while True:
+            i += 1
+            while xs[i] < pivot:
+                yield xs + [[i, pivot_idx]]
+                i += 1
+            yield  xs + [[i, pivot_idx]]
+            j -= 1
+            while xs[j] > pivot:
+                yield xs + [[j, pivot_idx]]
+                j -= 1
+            yield xs + [[j, pivot_idx]]
+            if i >= j:
+                yield xs + [[i, j]]
+                return j
+            xs[i], xs[j] = xs[j], xs[i]
+            yield xs + [[i, j]]
+
+    def introsort_runner(max_depth, lo, hi):
+        nonlocal xs
+        if hi - lo <= insertion_threshold:
+            xs = yield from binary_insertion_sort(xs, lo, hi + 1)
+            return            
+        else:
+            p = yield from partition(xs, lo, hi)
+            yield from introsort_runner(max_depth, lo, p)
+            yield from introsort_runner(max_depth, p + 1, hi)
+
+    max_depth = 2 * math.floor(math.log(len(xs)))
+    yield from introsort_runner(max_depth, 0, len(xs) - 1)
+    yield xs + [[]]
+
+
+
+def timsort(xs):  # https://en.wikipedia.org/wiki/Timsort
     MINRUN = 32
     if len(xs) <= MINRUN:
         insertion_sort(xs)
@@ -266,7 +336,7 @@ def timsort(xs):
 def vis_algorithm(algorithm, n, interval=1, seed=True, *args, **kwargs):
     xs = generate_numbers(n)
     title = algorithm.__name__.replace('_', ' ').title()
-    generator = algorithm(xs)
+    generator = algorithm(xs, **kwargs)
 
     fig, ax = plt.subplots()
     ax.set_title(title, color='white')
