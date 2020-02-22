@@ -228,7 +228,6 @@ def heapsort(xs):  # https://en.wikipedia.org/wiki/Heapsort
                 # yield xs + [[swap, child]]
                 swap = child
             yield xs + [[swap, child]]
-
             
             if child + 1 <= end and xs[swap] < xs[child + 1]:
                 # yield xs + [[swap, child + 1]]
@@ -287,7 +286,7 @@ def introsort(xs, insertion_threshold=16):  # https://en.wikipedia.org/wiki/Intr
         yield xs + [[]]
         return xs
 
-    def partition(xs, lo, hi):
+    def partition(xs, lo, hi):  # Hoare partition routine
         pivot_idx = (lo + hi) // 2
         pivot = xs[pivot_idx]
         i = lo - 1
@@ -309,15 +308,80 @@ def introsort(xs, insertion_threshold=16):  # https://en.wikipedia.org/wiki/Intr
             xs[i], xs[j] = xs[j], xs[i]
             yield xs + [[i, j]]
 
+    def heapsort(xs, lo, hi):  # heapsort routine for introsort
+        def max_heapify(xs, i, end):
+            
+            left = 2 * (i - lo) + 1 + lo
+            right = 2 * (i - lo) + 2 + lo
+            largest = i
+
+            if left < end and xs[left] > xs[largest]:
+                largest = left
+            # yield xs + [[left, largest]]
+
+            if right < end and xs[right] > xs[largest]:
+                largest = right
+            # yield xs + [[right, largest]]
+
+            if largest != i:
+                xs[i], xs[largest] = xs[largest], xs[i]
+                # yield xs + [[i, largest]]
+                yield from max_heapify(xs, largest, end)
+            yield xs + [[i]]
+
+        def build_heap(xs, lo, hi):
+            for i in range(lo + (hi - lo) // 2 + 1, lo - 1, -1):
+                yield from max_heapify(xs, i, hi + 1)            
+
+        def sift_down(xs, start, end):
+            root = start
+            while start + (root - start) * 2 + 1 <= end:
+                child = start + (root - start) * 2 + 1
+                swap = root
+
+                if xs[swap] < xs[child]:
+                    # yield xs + [[swap, child]]
+                    swap = child
+                yield xs + [[swap, child]]
+                
+                if child + 1 <= end and xs[swap] < xs[child + 1]:
+                    # yield xs + [[swap, child + 1]]
+                    swap = child + 1
+                yield xs + [[swap, child + 1]]
+
+                if swap == root:
+                    return
+                else:
+                    xs[root], xs[swap] = xs[swap], xs[root]
+                    yield xs + [[swap, root]]
+                    root = swap
+
+        def heapsort_runner(xs, lo, hi):
+            yield from build_heap(xs, lo, hi)
+            end = hi
+
+            while end > lo:
+                xs[end], xs[lo] = xs[lo], xs[end]
+                yield xs + [[lo, end]]
+                end -= 1
+                yield from sift_down(xs, lo, end)
+
+        yield from heapsort_runner(xs, lo, hi)
+        yield xs + [[]]
+        return xs
+
     def introsort_runner(max_depth, lo, hi):
         nonlocal xs
         if hi - lo <= insertion_threshold:
             xs = yield from binary_insertion_sort(xs, lo, hi + 1)
-            return            
+            return       
+        elif max_depth <= 0:
+            xs = yield from heapsort(xs, lo, hi)
+            return
         else:
             p = yield from partition(xs, lo, hi)
-            yield from introsort_runner(max_depth, lo, p)
-            yield from introsort_runner(max_depth, p + 1, hi)
+            yield from introsort_runner(max_depth - 1, lo, p)
+            yield from introsort_runner(max_depth - 1, p + 1, hi)
 
     max_depth = 2 * math.floor(math.log(len(xs)))
     yield from introsort_runner(max_depth, 0, len(xs) - 1)
