@@ -508,10 +508,7 @@ def timsort(xs):
                     s.append((start, b[1] + c[1]))
             break
 
-    min_gallop = 7
-
     def merge(xs, small_tup, big_tup):  # merge runs from stack together
-        nonlocal min_gallop
         if big_tup[1] < small_tup[1]:
             small_tup, big_tup = big_tup, small_tup
 
@@ -551,7 +548,6 @@ def timsort(xs):
             idx += 1
         if i < len(temp):
             big[-(len(temp) - i):] = temp[i:]
-            yield xs + [list(range(bg_end - len(temp) - i, bg_end))]
         xs_idx = min(small_tup[0], big_tup[0])
         for val in small + big:
             xs[xs_idx] = val
@@ -583,15 +579,15 @@ def timsort(xs):
     
 
 # ---ANIMATION---
-def animate(algorithm, n, interval=1, seed=True, *args, **kwargs):
+def animate(algorithm, n, interval=1, seed=True, metrics=False, *args, **kwargs):
     xs = generate_numbers(n)
     title = algorithm.__name__.replace('_', ' ').title()
     generator = algorithm(xs, **kwargs)
 
-    fig, ax = plt.subplots()
-    ax.set_title(title, color='white')
+    fig, ax = plt.subplots(figsize=(25, 16))
+    ax.set_title(title, color='white', fontsize=24)
     bars = ax.bar(range(len(xs)), xs, align='edge', color='#01b8c6')
-    text = ax.text(0, 0.975, '', transform=ax.transAxes, color='white')
+    text = ax.text(0, 0.975, '', transform=ax.transAxes, color='white', fontsize=12)
     ax.axis('off')
     fig.patch.set_facecolor('#151231')
 
@@ -607,7 +603,8 @@ def animate(algorithm, n, interval=1, seed=True, *args, **kwargs):
             else:
                 rect.set_color('#01b8c6')
             operations += 1
-        text.set_text(
+        if metrics:
+            text.set_text(
             f'n = {len(xs) - 1}\n\
 {operations} operations\n\
 time elapsed: {format(time.time() - start, ".3f")}s')
