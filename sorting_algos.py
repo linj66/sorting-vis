@@ -418,7 +418,6 @@ def timsort(xs):
         
     def binsort(xs, lo, hi):  # insertion sort routine 
         for i in range(lo, hi):
-            print(i, lo, i - 1, hi)
             swap = yield from binary_search(xs, xs[i], lo, i - 1)
             yield xs + [[i, swap]]
             xs = xs[:swap] + [xs[i]] + xs[swap:i] + xs[i + 1:]
@@ -509,7 +508,10 @@ def timsort(xs):
                     s.append((start, b[1] + c[1]))
             break
 
+    min_gallop = 7
+
     def merge(xs, small_tup, big_tup):  # merge runs from stack together
+        nonlocal min_gallop
         if big_tup[1] < small_tup[1]:
             small_tup, big_tup = big_tup, small_tup
 
@@ -533,23 +535,23 @@ def timsort(xs):
             if big[j] < temp[i]:
                 if idx >= len(small):
                     big[idx - len(small)] = big[j]
-                    # yield
+                    yield xs + [[bg_start + j, bg_start + idx - sm_start]]
                 else:
                     small[idx] = big[j]
-                    # yield
+                    yield xs + [[bg_start + j, sm_start + idx]]
                 j += 1
             else: # if temp[i] <= big[j]; i believe this maintains stability?
                 if idx >= len(small):
                     big[idx - len(small)] = temp[i]
-                    # yield
+                    yield xs + [[idx, bg_start + idx - sm_start]]
                 else:
                     small[idx] = temp[i]
-                    # yield
+                    yield xs + [[idx, sm_start + idx]]
                 i += 1
             idx += 1
         if i < len(temp):
             big[-(len(temp) - i):] = temp[i:]
-            # yield
+            yield xs + [list(range(bg_end - len(temp) - i, bg_end))]
         xs_idx = min(small_tup[0], big_tup[0])
         for val in small + big:
             xs[xs_idx] = val
