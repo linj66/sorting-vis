@@ -431,33 +431,47 @@ def timsort(xs):
             return curr - start + 1
 
     def merge_collapse(xs, s):  # keeps track of stack invariants; merges while invariants are not met
-        while len(s) >= 3:
-            a = s[-3]
-            b = s[-2]
-            c = s[-1]
-            print(a,b,c)
-            if a[1] <= b[1] + c[1] or b[1] <= c[1]:
-                if a[1] <= b[1] + c[1]:
-                    if a[1] > c[1]:
+        # a = s[-3]
+        while True:
+            if len(s) >= 3:
+                a = s[-3]
+                b = s[-2]
+                c = s[-1]
+                if a[1] <= b[1] + c[1] or b[1] <= c[1]:
+                    if a[1] <= b[1] + c[1]:
+                        if a[1] > c[1]:
+                            start = min(b[0], c[0])
+                            xs[start:start + b[1] + c[1]] = merge(xs[b[0]:b[0] + b[1]], xs[c[0]:c[0] + c[1]])
+                            s.pop()
+                            s.pop()
+                            s.append((start, b[1] + c[1]))
+                        else:  # going to need to update stack some time
+                            start = min(a[0], b[0])
+                            xs[start:start + b[1] + a[1]] = merge(xs[b[0]:b[0] + b[1]], xs[a[0]:a[0] + a[1]])
+                            s.pop(-3)
+                            s.pop(-2)
+                            s.append((start, a[1] + b[1]))
+                    else:
                         start = min(b[0], c[0])
                         xs[start:start + b[1] + c[1]] = merge(xs[b[0]:b[0] + b[1]], xs[c[0]:c[0] + c[1]])
                         s.pop()
                         s.pop()
                         s.append((start, b[1] + c[1]))
-                    else:  # going to need to update stack some time
-                        start = min(a[0], b[0])
-                        xs[start:start + b[1] + a[1]] = merge(xs[b[0]:b[0] + b[1]], xs[a[0]:a[0] + a[1]])
-                        s.pop(-3)
-                        s.pop(-2)
-                        s.append((start, a[1] + b[1]))
+                    continue
                 else:
+                    break
+
+            if len(s) == 2:
+                b = s[-2]
+                c = s[-1]
+                if b[1] <= c[1]:
+                    print(b, c)
                     start = min(b[0], c[0])
                     xs[start:start + b[1] + c[1]] = merge(xs[b[0]:b[0] + b[1]], xs[c[0]:c[0] + c[1]])
                     s.pop()
                     s.pop()
                     s.append((start, b[1] + c[1]))
-            else:
-                break
+            break
 
     def binary_search(xs, target, start, end):  # find extremities
         if start >= end:
