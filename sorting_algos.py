@@ -67,7 +67,7 @@ def insertion_sort(xs):  # https://en.wikipedia.org/wiki/Insertion_sort
     yield xs + [[]]
 
 
-def binary_insertion_sort(xs):  # https://en.wikipedia.org/wiki/Insertion_sort
+def binsort(xs):  # https://en.wikipedia.org/wiki/Insertion_sort
     def binary_search(xs, target, start, end):
         if start >= end:
             if start > end or xs[start] > target:
@@ -256,7 +256,7 @@ def heapsort(xs):  # https://en.wikipedia.org/wiki/Heapsort
 
 
 def introsort(xs, insertion_threshold=16):  # https://en.wikipedia.org/wiki/Introsort
-    def binary_insertion_sort(xs, lo, hi):  # insertion sort routine for introsort
+    def binsort(xs, lo, hi):  # insertion sort routine for introsort
         def binary_search(xs, target, start, end):
             if start >= end:
                 if start > end or xs[start] > target:
@@ -373,7 +373,7 @@ def introsort(xs, insertion_threshold=16):  # https://en.wikipedia.org/wiki/Intr
     def introsort_runner(max_depth, lo, hi):
         nonlocal xs
         if hi - lo <= insertion_threshold:
-            xs = yield from binary_insertion_sort(xs, lo, hi + 1)
+            xs = yield from binsort(xs, lo, hi + 1)
             return       
         elif max_depth <= 0:
             xs = yield from heapsort(xs, lo, hi)
@@ -389,15 +389,158 @@ def introsort(xs, insertion_threshold=16):  # https://en.wikipedia.org/wiki/Intr
 
 
 
-def timsort(xs):  # https://en.wikipedia.org/wiki/Timsort
-    MINRUN = 32
-    if len(xs) <= MINRUN:
-        insertion_sort(xs)
-    else:
-        pass
 
-# ---RUNNER---
-def vis_algorithm(algorithm, n, interval=1, seed=True, *args, **kwargs):
+def timsort(xs):  
+    # https://en.wikipedia.org/wiki/Timsort
+    # https://github.com/python/cpython/blob/master/Objects/listsort.txt
+    #if len(xs) <= 64:
+    #    yield from binsort(xs)
+    
+    def find_minrun():
+        length = len(xs)
+        bits =  length.bit_length() - 6
+        minrun = length >> bits
+        mask = (1 << bits) - 1
+        if (length & mask):
+            minrun += 1
+        return minrun
+
+    def count_run(xs, start):  # finds length of next run, swaps if decreasing
+        if start >= len(xs):
+            return 0
+        elif start == len(xs) - 1:
+            return 1
+
+        curr = start
+        if xs[curr + 1] < xs[curr]:
+            curr += 1
+            while curr < len(xs) - 1 and xs[curr + 1] < xs[curr]:
+                curr += 1
+            i = start
+            j = curr
+            while i < j:
+                xs[i], xs[j] = xs[j], xs[i]
+                # yield
+                i += 1 
+                j -= 1
+            return curr - start + 1
+        else:
+            curr += 1
+            while curr < len(xs) - 1 and xs[curr + 1] >= xs[curr]:
+                curr += 1
+            return curr - start + 1
+
+    def merge_collapse(xs, s):  # keeps track of stack invariants; merges while invariants are not met
+        while len(s) >= 3:
+            a = s[-3]
+            b = s[-2]
+            c = s[-1]
+            print(a,b,c)
+            if a[1] <= b[1] + c[1] or b[1] <= c[1]:
+                if a[1] <= b[1] + c[1]:
+                    if a[1] > c[1]:
+                        start = min(b[0], c[0])
+                        xs[start:start + b[1] + c[1]] = merge(xs[b[0]:b[0] + b[1]], xs[c[0]:c[0] + c[1]])
+                        s.pop()
+                        s.pop()
+                        s.append((start, b[1] + c[1]))
+                    else:  # going to need to update stack some time
+                        start = min(a[0], b[0])
+                        xs[start:start + b[1] + a[1]] = merge(xs[b[0]:b[0] + b[1]], xs[a[0]:a[0] + a[1]])
+                        s.pop(-3)
+                        s.pop(-2)
+                        s.append((start, a[1] + b[1]))
+                else:
+                    start = min(b[0], c[0])
+                    xs[start:start + b[1] + c[1]] = merge(xs[b[0]:b[0] + b[1]], xs[c[0]:c[0] + c[1]])
+                    s.pop()
+                    s.pop()
+                    s.append((start, b[1] + c[1]))
+            else:
+                break
+
+    def binary_search(xs, target, start, end):  # find extremities
+        if start >= end:
+            if start > end or xs[start] > target:
+                return start
+            else:
+                return start + 1
+
+        mid = (start + end) // 2
+        if xs[mid] < target:
+            return binary_search(xs, target, mid + 1, end)
+        elif xs[mid] > target:
+            return binary_search(xs, target, start, mid - 1)
+        else:
+            return mid
+
+    def merge(small, big):  # merge runs from stack together
+        if len(big) < len(small):
+            small, big = big, small
+        first_big_in_small = binary_search(small, big[0], 0, len(small) - 1)
+        last_small_in_big = binary_search(big, small[-1], 0, len(big) - 1)
+        temp = small[first_big_in_small:].copy()
+        #print("fbins", first_big_in_small)
+        #print("lsinb", last_small_in_big)
+        #print(small, big)
+        #print(temp)
+        #print()
+        i = 0
+        j = 0
+        idx = first_big_in_small
+        while i < len(temp) and j <= min(last_small_in_big, len(big) - 1):
+            #print(big[j], "vs.", temp[i])
+            if big[j] < temp[i]:
+                if idx >= len(small):
+                    #print("big[%s] = %s" % (idx - len(small), big[j]))
+                    big[idx - len(small)] = big[j]
+                else:
+                    #print("small[%s] = %s" % (idx, big[j]))
+                    small[idx] = big[j]
+                j += 1
+            else: # if temp[i] <= big[j]; i believe this maintains stability?
+                if idx >= len(small):
+                    #print("big[%s] = %s" % ((idx - len(small), temp[i])))
+                    big[idx - len(small)] = temp[i]
+                else:
+                    #print("small[%s] = %s" % (idx, temp[i]))
+                    small[idx] = temp[i]
+                i += 1
+            idx += 1
+        #print(small, big)
+        if i < len(temp):
+            big[-(len(temp) - i):] = temp[i:]
+        return small + big
+
+    #minrun = find_minrun()
+    stack = list()
+
+    # here we go
+    idx = 0
+    while idx < len(xs):
+        len_run = count_run(xs, idx)
+        #if len_run < minrun:
+        #    yield from binsort(xs, idx, idx + minrun)
+        #    len_run = minrun
+        stack.append((idx, len_run))
+        idx += len_run
+        merge_collapse(xs, stack)
+    print("end of stepping", stack)
+    while len(stack) > 1:
+        a = stack.pop()
+        b = stack.pop()
+        start = min(a[0], b[0])
+        xs[start:start + a[1] + b[1]] = merge(xs[a[0]:a[0] + a[1]], xs[b[0]:b[0] + b[1]])
+        stack.append((start, start + a[1] + b[1]))
+    print(stack)
+    return xs
+
+        
+        
+    
+
+# ---ANIMATION---
+def animate(algorithm, n, interval=1, seed=True, *args, **kwargs):
     xs = generate_numbers(n)
     title = algorithm.__name__.replace('_', ' ').title()
     generator = algorithm(xs, **kwargs)
@@ -412,8 +555,6 @@ def vis_algorithm(algorithm, n, interval=1, seed=True, *args, **kwargs):
     start = time.time()
     operations = 0
     def update_fig(xs, rects, start):
-        if len(xs) > 10000:
-            raise SystemExit
         nonlocal operations
         for i, tup in enumerate(zip(rects, xs)):
             rect, val = tup
