@@ -395,7 +395,6 @@ def timsort(xs):
     # https://github.com/python/cpython/blob/master/Objects/listsort.txt
 
     def binary_search(xs, target, start, end):
-        print(target, start, end)
         if start >= end:
             if start > end or xs[start] > target:
                 yield xs + [[start]]
@@ -419,7 +418,6 @@ def timsort(xs):
             return mid
         
     def binsort(xs, lo, hi, start):  # insertion sort routine
-        print('binsort')
         for i in range(start, hi):
             swap = yield from binary_search(xs, xs[i], lo, i - 1)
             yield xs + [[i, swap]]
@@ -517,13 +515,11 @@ def timsort(xs):
     def gallop(xs, target_i, start, end):
         nonlocal MIN_GALLOP
         nonlocal gallop_threshold
-        print("galloping with", target_i, start, end)
         k = 1
         idx = start
         while idx < end and xs[idx] < xs[target_i]:
             idx = start + 2 ** k - 1
             k += 1
-        print("k", k, "idx", idx)
         result = yield from binary_search(xs, xs[target_i], 
                                           start + (idx - start + 1) // (2 ** (k - 1)),  min(idx, end))
         if result - start >= MIN_GALLOP:
@@ -559,22 +555,7 @@ def timsort(xs):
         consec_bg = 0
         while i < len(temp) and j <= min(lsinb, len(big) - 1):
             if consec_bg >= gallop_threshold:
-                print("galloping! bg")
                 nxtsinb = yield from gallop(xs, sm_start + fbins + i, bg_start + j, bg_end)
-                # remove: nxtsinb -= sm_start + fbins
-                # nxtsinb is a number between bg_start + j and bg_end inclusive
-                # copy from bg_start + j to (but not including) nxtsinb to the temp area
-                # # of numbers to copy = bg_start + j - nxtsinb
-                # space in small = max(0, len(small) - idx)
-                # if space > 0
-                # if copy > space
-                # small[idx:] = big[j:j + space]
-                # big[0:copy - space] = big[j + space: j + copy]
-                # else
-                # small[idx:idx + copy] = big[j: j + copy]
-                # else
-                # big[idx - len(small):idx - len(small) + copy] = big[j:j + copy]
-                # idx += copy
                 copy = nxtsinb - (bg_start + j)
                 space = max(0, len(small) - idx)
                 if space > 0:
@@ -590,7 +571,6 @@ def timsort(xs):
                 consec_bg = 0
                 continue
             if consec_sm >= gallop_threshold:
-                print("galloping! sm")
                 nxtbins = yield from gallop(xs, bg_start + j, sm_start + fbins + i, sm_end)
                 copy = nxtbins - (sm_start + fbins + i)
                 space = max(0, len(small) - idx)
@@ -639,7 +619,6 @@ def timsort(xs):
     while idx < len(xs):
         len_run = yield from count_run(xs, idx)
         if len_run < minrun:
-            print("run too short")
             xs = yield from binsort(xs, idx, min(idx + minrun, len(xs)), idx + len_run)
             len_run = min(minrun, len(xs) - idx)
         stack.append((idx, len_run))
@@ -653,9 +632,6 @@ def timsort(xs):
         stack.append((start, a[1] + b[1]))    
     yield xs + [[]]
 
-        
-        
-    
 
 # ---ANIMATION---
 def animate(algorithm, xs, interval=1, seed=True, metrics=False, *args, **kwargs):
