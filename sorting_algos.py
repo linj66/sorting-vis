@@ -634,12 +634,12 @@ def timsort(xs):
 
 
 # ---ANIMATION---
-def animate(algorithm, xs, interval=1, seed=True, metrics=False, *args, **kwargs):
-    #xs = generate_numbers(n)
+def animate(algorithm, n, interval=1, seed=True, metrics=False, *args, **kwargs):
+    xs = generate_numbers(n)
     title = algorithm.__name__.replace('_', ' ').title()
     generator = algorithm(xs, **kwargs)
 
-    fig, ax = plt.subplots() # figsize=(25, 16)
+    fig, ax = plt.subplots(figsize=(25, 16))
     ax.set_title(title, color='white', fontsize=24)
     bars = ax.bar(range(len(xs)), xs, align='edge', color='#01b8c6')
     text = ax.text(0, 0.975, '', transform=ax.transAxes, color='white', fontsize=12)
