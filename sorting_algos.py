@@ -65,37 +65,39 @@ def insertion_sort(xs):  # https://en.wikipedia.org/wiki/Insertion_sort
             j -= 1
         yield xs + [[i, j + 1]]
         xs[j + 1] = x
+        yield xs + [[i, j + 1]]
         i += 1
     yield xs + [[]]
 
 
 def binsort(xs):  # https://en.wikipedia.org/wiki/Insertion_sort
-    def binary_search(xs, target, start, end):
+    def binary_search(xs, target_i, start, end):
         if start >= end:
-            if start > end or xs[start] > target:
-                yield xs + [[start]]
+            if start > end or xs[start] > xs[target_i]:
+                yield xs + [[start, target_i]]
                 return start
             else:
-                yield xs + [[start + 1]]
+                yield xs + [[start + 1, target_i]]
                 return start + 1
             yield xs + [[start, end]]
 
         mid = (start + end) // 2
 
-        yield xs + [[mid]]
-        if xs[mid] < target:
-            result = yield from binary_search(xs, target, mid + 1, end)
+        yield xs + [[mid, target_i]]
+        if xs[mid] < xs[target_i]:
+            result = yield from binary_search(xs, target_i, mid + 1, end)
             return result
-        elif xs[mid] > target:
-            result = yield from binary_search(xs, target, start, mid - 1)
+        elif xs[mid] > xs[target_i]:
+            result = yield from binary_search(xs, target_i, start, mid - 1)
             return result
         else:
             return mid
 
     for i in range(1, len(xs)):
-        swap = yield from binary_search(xs, xs[i], 0, i - 1)
+        swap = yield from binary_search(xs, i, 0, i - 1)
         yield xs + [[i, swap]]
         xs = xs[:swap] + [xs[i]] + xs[swap:i] + xs[i + 1:]
+        yield xs + [[]]
     yield xs + [[]]
 
         
