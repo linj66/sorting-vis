@@ -194,8 +194,6 @@ def quicksort(xs):  # https://en.wikipedia.org/wiki/Quicksort
             yield xs + [[i, j]]
             yield xs + [[]]
         
-            
-
     def quicksort_runner(xs, lo, hi):
         if lo < hi:
             p = yield from partition(xs, lo, hi)
