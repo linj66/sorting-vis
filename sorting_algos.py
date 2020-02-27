@@ -99,6 +99,7 @@ def binsort(xs):  # https://en.wikipedia.org/wiki/Insertion_sort
         swap = yield from binary_search(xs, i, 0, i - 1)
         yield xs + [[i, swap]]
         xs = xs[:swap] + [xs[i]] + xs[swap:i] + xs[i + 1:]
+        yield xs + [[swap]]
         yield xs + [[]]
     yield xs + [[]]
 
@@ -131,35 +132,40 @@ def mergesort(xs):  # https://en.wikipedia.org/wiki/Merge_sort
         while left < mid and right < end:
             if xs[left] < xs[right]:
                 merged.append(xs[left])
+                yield xs + [[left, right]]
                 left += 1
             else:
                 merged.append(xs[right])
+                yield xs + [[left, right]]
                 right += 1
-            yield xs + [[left, right]]
 
         while left < mid:
             merged.append(xs[left])
-            left += 1
             yield xs + [[left]]
+            left += 1
+            
 
         while right < end:
             merged.append(xs[right])
-            right += 1
             yield xs + [[right]]
-
+            right += 1
+            
         for i, val in enumerate(merged):
             xs[start + i] = val
             yield xs + [[start + i]]
         
     def mergesort_runner(xs, start, end):       
         if end - start <= 1:
+            if end - start == 1:
+                yield xs + [[start]]
+                yield xs + [[]]
             return
 
         mid = start + (end - start) // 2
         yield from mergesort_runner(xs, start, mid)
         yield from mergesort_runner(xs, mid, end)
         yield from merge(xs, start, mid, end)
-        yield xs + [[start, end]]
+        yield xs + [[]]
 
     yield from mergesort_runner(xs, 0, len(xs))
     yield xs + [[]]
