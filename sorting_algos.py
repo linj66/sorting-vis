@@ -59,14 +59,15 @@ def insertion_sort(xs):  # https://en.wikipedia.org/wiki/Insertion_sort
     while i < len(xs):
         x = xs[i]
         j = i - 1
+        yield xs + [[i, j]]
         while j >= 0 and xs[j] > x:
-            yield xs + [[j, j + 1]]
             xs[j + 1] = xs[j]
+            xs[j] = x
+            yield xs + [[j, j + 1]]
             j -= 1
-        yield xs + [[i, j + 1]]
         xs[j + 1] = x
-        yield xs + [[i, j + 1]]
         i += 1
+        yield xs + [[]]
     yield xs + [[]]
 
 
