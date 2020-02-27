@@ -2,6 +2,8 @@ import random
 import time
 import math
 
+import matplotlib
+matplotlib.rcParams['toolbar'] = 'None'
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
@@ -639,7 +641,7 @@ def animate(algorithm, n, interval=1, seed=True, metrics=False, *args, **kwargs)
     title = algorithm.__name__.replace('_', ' ').title()
     generator = algorithm(xs, **kwargs)
 
-    fig, ax = plt.subplots(figsize=(25, 16))
+    fig, ax = plt.subplots(figsize=(16, 9))
     ax.set_title(title, color='white', fontsize=24)
     bars = ax.bar(range(len(xs)), xs, align='edge', color='#01b8c6')
     text = ax.text(0, 0.975, '', transform=ax.transAxes, color='white', fontsize=12)
@@ -666,5 +668,8 @@ time elapsed: {format(time.time() - start, ".3f")}s')
 
     anim = animation.FuncAnimation(fig, func=update_fig, fargs=(bars, start),
         frames=generator, interval=interval, repeat=False)
+
+    manager = plt.get_current_fig_manager()
+    manager.window.wm_geometry("+0+0")
     
     plt.show()
