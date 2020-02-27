@@ -27,16 +27,17 @@ def bubble_sort(xs):  # https://en.wikipedia.org/wiki/Bubble_sort
     length = len(xs)
     while True:
         swapped = False
+        yield xs + [[0]]
         for i in range(1, length):
             if xs[i - 1] > xs[i]:
                 xs[i - 1], xs[i] = xs[i], xs[i - 1]
                 swapped = True
-                yield xs + [[i - 1, i]]
-            yield xs + [[i - 1, i]]
+            yield xs + [[i]]
         yield xs + [[]]
         length -= 1
         if not swapped:
             break
+    yield xs + [[]]
 
 
 def selection_sort(xs):  # https://en.wikipedia.org/wiki/Selection_sort
@@ -49,8 +50,8 @@ def selection_sort(xs):  # https://en.wikipedia.org/wiki/Selection_sort
             yield xs + [[j, min_idx]]
         if min_idx != i:
             xs[min_idx], xs[i] = xs[i], xs[min_idx]            
-            yield xs + [[i, min_idx]]
-        yield xs + [[i, min_idx]]
+            yield xs + [[i]]
+        yield xs + [[]]
     yield xs + [[]]
 
 
@@ -176,17 +177,18 @@ def quicksort(xs):  # https://en.wikipedia.org/wiki/Quicksort
             while xs[i] < pivot:
                 yield xs + [[i, pivot_idx]]
                 i += 1
-            yield  xs + [[i, pivot_idx]]
             j -= 1
             while xs[j] > pivot:
                 yield xs + [[j, pivot_idx]]
                 j -= 1
-            yield xs + [[j, pivot_idx]]
             if i >= j:
-                yield xs + [[i, j]]
                 return j
+            yield xs + [[i, j]]
             xs[i], xs[j] = xs[j], xs[i]
             yield xs + [[i, j]]
+            yield xs + [[]]
+        
+            
 
     def quicksort_runner(xs, lo, hi):
         if lo < hi:
