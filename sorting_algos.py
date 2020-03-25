@@ -3,10 +3,11 @@ import time
 import math
 
 import matplotlib
-matplotlib.rcParams['toolbar'] = 'None'
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
+matplotlib.rcParams['toolbar'] = 'None'
+matplotlib.use('TkAgg')
 
 def generate_numbers(n, seed=True):
     if seed:
@@ -32,8 +33,7 @@ def bubble_sort(xs):  # https://en.wikipedia.org/wiki/Bubble_sort
             if xs[i - 1] > xs[i]:
                 xs[i - 1], xs[i] = xs[i], xs[i - 1]
                 swapped = True
-            yield xs + [[i]]
-        yield xs + [[]]
+            yield xs + [[i - 1, i]]
         length -= 1
         if not swapped:
             break
@@ -47,11 +47,11 @@ def selection_sort(xs):  # https://en.wikipedia.org/wiki/Selection_sort
             if xs[j] < xs[min_idx]:
                 yield xs + [[j, min_idx]]
                 min_idx = j
-            yield xs + [[j, min_idx]]
+            else:
+                yield xs + [[j, min_idx]]
         if min_idx != i:
             xs[min_idx], xs[i] = xs[i], xs[min_idx]            
             yield xs + [[i]]
-        yield xs + [[]]
     yield xs + [[]]
 
 
@@ -68,11 +68,10 @@ def insertion_sort(xs):  # https://en.wikipedia.org/wiki/Insertion_sort
             j -= 1
         xs[j + 1] = x
         i += 1
-        yield xs + [[]]
     yield xs + [[]]
 
 
-def binsort(xs):  # https://en.wikipedia.org/wiki/Insertion_sort
+def bin_ins_sort(xs):  # https://en.wikipedia.org/wiki/Insertion_sort
     def binary_search(xs, target_i, start, end):
         if start >= end:
             if start > end or xs[start] > xs[target_i]:
@@ -123,7 +122,7 @@ def shellsort(xs):  # https://en.wikipedia.org/wiki/Shellsort
     yield xs + [[]]
 
 
-def mergesort(xs):  # https://en.wikipedia.org/wiki/Merge_sort
+def merge_sort(xs):  # https://en.wikipedia.org/wiki/Merge_sort
     def merge(xs, start, mid, end):
         merged = list()
         left = start
@@ -158,14 +157,12 @@ def mergesort(xs):  # https://en.wikipedia.org/wiki/Merge_sort
         if end - start <= 1:
             if end - start == 1:
                 yield xs + [[start]]
-                yield xs + [[]]
             return
 
         mid = start + (end - start) // 2
         yield from mergesort_runner(xs, start, mid)
         yield from mergesort_runner(xs, mid, end)
         yield from merge(xs, start, mid, end)
-        yield xs + [[]]
 
     yield from mergesort_runner(xs, 0, len(xs))
     yield xs + [[]]
@@ -191,8 +188,7 @@ def quicksort(xs):  # https://en.wikipedia.org/wiki/Quicksort
                 return j
             yield xs + [[i, j]]
             xs[i], xs[j] = xs[j], xs[i]
-            yield xs + [[i, j]]
-            yield xs + [[]]
+            #yield xs + [[i, j]]
         
     def quicksort_runner(xs, lo, hi):
         if lo < hi:
@@ -236,14 +232,16 @@ def heapsort(xs):  # https://en.wikipedia.org/wiki/Heapsort
             swap = root
 
             if xs[swap] < xs[child]:
-                # yield xs + [[swap, child]]
+                yield xs + [[swap, child]]
                 swap = child
-            yield xs + [[swap, child]]
+            else:
+                yield xs + [[swap, child]]
             
             if child + 1 <= end and xs[swap] < xs[child + 1]:
-                # yield xs + [[swap, child + 1]]
+                yield xs + [[swap, child + 1]]
                 swap = child + 1
-            yield xs + [[swap, child + 1]]
+            else:
+                yield xs + [[swap, child + 1]]
 
             if swap == root:
                 return
@@ -266,8 +264,8 @@ def heapsort(xs):  # https://en.wikipedia.org/wiki/Heapsort
     yield xs + [[]]
 
 
-def introsort(xs, insertion_threshold=16):  # https://en.wikipedia.org/wiki/Introsort
-    def binsort(xs, lo, hi):  # insertion sort routine for introsort
+def introsort(xs, insertion_threshold=32):  # https://en.wikipedia.org/wiki/Introsort
+    def bin_ins_sort(xs, lo, hi):  # insertion sort routine for introsort
         def binary_search(xs, target, start, end):
             if start >= end:
                 if start > end or xs[start] > target:
@@ -294,7 +292,7 @@ def introsort(xs, insertion_threshold=16):  # https://en.wikipedia.org/wiki/Intr
             swap = yield from binary_search(xs, xs[i], lo, i - 1)
             yield xs + [[i, swap]]
             xs = xs[:swap] + [xs[i]] + xs[swap:i] + xs[i + 1:]
-        yield xs + [[]]
+        #yield xs + [[]]
         return xs
 
     def partition(xs, lo, hi):  # Hoare partition routine
@@ -307,12 +305,14 @@ def introsort(xs, insertion_threshold=16):  # https://en.wikipedia.org/wiki/Intr
             while xs[i] < pivot:
                 yield xs + [[i, pivot_idx]]
                 i += 1
-            yield  xs + [[i, pivot_idx]]
+            else:
+                yield  xs + [[i, pivot_idx]]
             j -= 1
             while xs[j] > pivot:
                 yield xs + [[j, pivot_idx]]
                 j -= 1
-            yield xs + [[j, pivot_idx]]
+            else:
+                yield xs + [[j, pivot_idx]]
             if i >= j:
                 yield xs + [[i, j]]
                 return j
@@ -351,14 +351,16 @@ def introsort(xs, insertion_threshold=16):  # https://en.wikipedia.org/wiki/Intr
                 swap = root
 
                 if xs[swap] < xs[child]:
-                    # yield xs + [[swap, child]]
+                    yield xs + [[swap, child]]
                     swap = child
-                yield xs + [[swap, child]]
+                else:
+                    yield xs + [[swap, child]]
                 
                 if child + 1 <= end and xs[swap] < xs[child + 1]:
-                    # yield xs + [[swap, child + 1]]
+                    yield xs + [[swap, child + 1]]
                     swap = child + 1
-                yield xs + [[swap, child + 1]]
+                else:
+                    yield xs + [[swap, child + 1]]
 
                 if swap == root:
                     return
@@ -378,13 +380,13 @@ def introsort(xs, insertion_threshold=16):  # https://en.wikipedia.org/wiki/Intr
                 yield from sift_down(xs, lo, end)
 
         yield from heapsort_runner(xs, lo, hi)
-        yield xs + [[]]
+        #yield xs + [[]]
         return xs
 
     def introsort_runner(max_depth, lo, hi):
         nonlocal xs
         if hi - lo <= insertion_threshold:
-            xs = yield from binsort(xs, lo, hi + 1)
+            xs = yield from bin_ins_sort(xs, lo, hi + 1)
             return       
         elif max_depth <= 0:
             xs = yield from heapsort(xs, lo, hi)
@@ -428,16 +430,16 @@ def timsort(xs):
         else:
             return mid
         
-    def binsort(xs, lo, hi, start):  # insertion sort routine
+    def bin_ins_sort(xs, lo, hi, start):  # insertion sort routine
         for i in range(start, hi):
             swap = yield from binary_search(xs, xs[i], lo, i - 1)
             yield xs + [[i, swap]]
             xs = xs[:swap] + [xs[i]] + xs[swap:i] + xs[i + 1:]
-        yield xs + [[]]
+        #yield xs + [[]]
         return xs
 
     if len(xs) <= 64:
-        yield from binsort(xs, 0, len(xs), 0)
+        yield from bin_ins_sort(xs, 0, len(xs), 0)
         return
     
     def find_minrun():
@@ -529,6 +531,7 @@ def timsort(xs):
         k = 1
         idx = start
         while idx < end and xs[idx] < xs[target_i]:
+            yield xs + [[idx, target_i]]
             idx = start + 2 ** k - 1
             k += 1
         result = yield from binary_search(xs, xs[target_i], 
@@ -630,7 +633,7 @@ def timsort(xs):
     while idx < len(xs):
         len_run = yield from count_run(xs, idx)
         if len_run < minrun:
-            xs = yield from binsort(xs, idx, min(idx + minrun, len(xs)), idx + len_run)
+            xs = yield from bin_ins_sort(xs, idx, min(idx + minrun, len(xs)), idx + len_run)
             len_run = min(minrun, len(xs) - idx)
         stack.append((idx, len_run))
         idx += len_run
@@ -645,35 +648,59 @@ def timsort(xs):
 
 
 # ---ANIMATION---
-def animate(algorithm, n, interval=1, seed=True, metrics=False, *args, **kwargs):
+def animate(algorithm, n, interval=1, seed=True, metrics=True, *args, **kwargs):
     xs = generate_numbers(n)
     title = algorithm.__name__.replace('_', ' ').title()
     generator = algorithm(xs, **kwargs)
 
-    fig, ax = plt.subplots(figsize=(16, 9))
-    ax.set_title(title, color='white', fontsize=24)
+    fig, ax = plt.subplots(figsize=(25, 16))
+    fig.suptitle(title, y=0.925, color='white', fontsize=36)
+    #ax.set_title(title, color='white', fontsize=32, fontweight='bold')
     bars = ax.bar(range(len(xs)), xs, align='edge', color='#01b8c6')
-    text = ax.text(0, 0.975, '', transform=ax.transAxes, color='white', fontsize=12)
+    text = fig.text(0.05, 0.825, '', color='white', fontsize=16, ha='left',
+        #bbox=dict(facecolor='none', edgecolor='white', pad=12)
+    )
     ax.axis('off')
+    ax.set_position(matplotlib.transforms.Bbox([[0.075,0.1],[0.925,0.82]]))
     fig.patch.set_facecolor('#151231')
 
+    desc = get_algo_desc(algorithm)
+    #desc_len = len(desc)
+    comparisons = 0
     start = time.time()
-    operations = 0
     def update_fig(xs, rects, start):
-        nonlocal operations
+        nonlocal comparisons
+        nonlocal desc
+        #desc_add = ''
+
+        if len(xs[-1]) == 2:
+            comparisons += 1
+
         for i, tup in enumerate(zip(rects, xs)):
             rect, val = tup
             rect.set_height(val)
+            
             if i in xs[-1]:
                 rect.set_color('#f79ce7')
+                
+                #if title == 'Bubble Sort':
+                #    if len(xs[-1]) == 2:
+                #        if not desc_add:
+                #            desc_add = 'Current comparison: ' + str(val) + ' ⩽ '
+                #        else:
+                #            desc_add += str(val) + '\n'
+                #    else:
+                 #       desc_add = 'Next iteration started\n' 
             else:
                 rect.set_color('#01b8c6')
-            operations += 1
+        
+        #desc += desc_add
         if metrics:
-            text.set_text(
-            f'n = {len(xs) - 1}\n\
-{operations} operations\n\
-time elapsed: {format(time.time() - start, ".3f")}s')
+            text.set_text(desc +
+            f'\nn = {len(xs) - 1}\n\
+{comparisons} comparisons')
+#time elapsed: {format(time.time() - start, ".3f")}s')
+        #desc = desc[:desc_len]
 
     anim = animation.FuncAnimation(fig, func=update_fig, fargs=(bars, start),
         frames=generator, interval=interval, repeat=False)
@@ -682,3 +709,32 @@ time elapsed: {format(time.time() - start, ".3f")}s')
     manager.window.wm_geometry("+0+0")
     
     plt.show()
+
+def get_algo_desc(algorithm):
+    name = algorithm.__name__
+    result = ''
+    if name == 'bubble_sort':
+        result += 'Bubble sort swaps adjacent out-of-order elements\n\n'
+        result += 'Runtime: $\mathregular{O(n^2)}$, Memory: O(1), Stable?: Yes'
+    elif name == 'selection_sort':
+        result += 'Selection sort finds the next smallest element\nand puts it into place\n\n'
+        result += 'Runtime: $\mathregular{O(n^2)}$, Memory: O(1), Stable?: No'
+    elif name == 'insertion_sort':
+        result += 'Insertion sort builds a sorted list one element at a time,\ninserting the next element into its sorted section\n\n'
+        result += 'Runtime: $\mathregular{O(n^2)}$, Memory: O(1), Stable?: Yes'
+    elif name == 'merge_sort':
+        result += 'Mergesort recursively divides the list into sublists\nand compares elements from two sublists\nto merge them together into one sublist\n\n'
+        result += 'Runtime: O(nlogn), Memory: O(n), Stable?: Yes'
+    elif name == 'quicksort':
+        result += 'Quicksort recursively selects a pivot element\nand partitions the list into two sublists:\nValues less than the pivot and values greater than the pivot\n\n'
+        result += 'Expected Runtime: O(nlogn), Memory: O(logn), Stable?: No'
+    elif name == 'heapsort':
+        result += 'Heapsort maintains the unsorted section of the list\nas a max-heap and extracts and inserts the root of the heap\ninto place on each iteration\n\n'
+        result += 'Runtime: O(nlogn), Memory: O(1), Stable?: No'
+    elif name == 'introsort':
+        result += 'Introsort is a hybrid of Insertion sort, Quicksort, and Heapsort\n\n'
+        result += 'Runtime: O(nlogn), Memory: O(logn), Stable?: No'
+    elif name == 'timsort':
+        result += 'Timsort is a hybrid of Insertion sort and Merge sort\n\n'
+        result += 'Runtime: O(nlogn), Memory: O(n), Stable?: Yes'
+    return result
