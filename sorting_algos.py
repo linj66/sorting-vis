@@ -1,10 +1,16 @@
 import random
 import time
 import math
+import os
+import operator
+import aifc
 
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import sdl2
+
+from play_aiff import ReadAIFF
 
 matplotlib.rcParams['toolbar'] = 'None'
 matplotlib.use('TkAgg')
@@ -264,7 +270,7 @@ def heapsort(xs):  # https://en.wikipedia.org/wiki/Heapsort
     yield xs + [[]]
 
 
-def introsort(xs, insertion_threshold=32):  # https://en.wikipedia.org/wiki/Introsort
+def introsort(xs, insertion_threshold=16):  # https://en.wikipedia.org/wiki/Introsort
     def bin_ins_sort(xs, lo, hi):  # insertion sort routine for introsort
         def binary_search(xs, target, start, end):
             if start >= end:
@@ -481,7 +487,7 @@ def timsort(xs):
                 curr += 1
             return curr - start + 1
 
-    def merge_collapse(xs, s):  # keeps track of stack invariants; merges while invariants are not met
+    def merge_collapse(xs, s):  # keeps track of stack invariants; merges while invariants broken
         while True:
             if len(s) >= 3:
                 a = s[-3]
@@ -609,7 +615,7 @@ def timsort(xs):
                 else:
                     small[idx] = big[j]
                 j += 1
-            else: # if temp[i] <= big[j]; i believe this maintains stability?
+            else: # if temp[i] <= big[j]; i believe this is how timsort maintains stability?
                 consec_bg = 0
                 consec_sm += 1
                 if idx >= len(small):
@@ -648,14 +654,20 @@ def timsort(xs):
 
 
 # ---ANIMATION---
-def animate(algorithm, n, interval=1, seed=True, metrics=True, *args, **kwargs):
+def animate(algorithm, n, interval=100, seed=True, metrics=True, *args, **kwargs):
     xs = generate_numbers(n)
     title = algorithm.__name__.replace('_', ' ').title()
     generator = algorithm(xs, **kwargs)
+    piano_files = ['piano_notes/ff/' + f for f in sorted(
+        os.listdir('piano_notes/ff/'), 
+        key=lambda n: (n[-6], ['C','D','E','F','G','A','B'].index(n[9]), -len(n))
+    )]
+    
+    if n <= 56:
+        piano_files = [f for f in piano_files if f[-7] != 'b'] 
 
     fig, ax = plt.subplots(figsize=(25, 16))
     fig.suptitle(title, y=0.925, color='white', fontsize=36)
-    #ax.set_title(title, color='white', fontsize=32, fontweight='bold')
     bars = ax.bar(range(len(xs)), xs, align='edge', color='#01b8c6')
     text = fig.text(0.05, 0.825, '', color='white', fontsize=16, ha='left',
         #bbox=dict(facecolor='none', edgecolor='white', pad=12)
@@ -669,6 +681,8 @@ def animate(algorithm, n, interval=1, seed=True, metrics=True, *args, **kwargs):
     comparisons = 0
     start = time.time()
     def update_fig(xs, rects, start):
+
+        # VISUAL UPDATES
         nonlocal comparisons
         nonlocal desc
         #desc_add = ''
@@ -682,7 +696,42 @@ def animate(algorithm, n, interval=1, seed=True, metrics=True, *args, **kwargs):
             
             if i in xs[-1]:
                 rect.set_color('#f79ce7')
+
+                # PLAY SOUND
+                # Sound playing code by Michael McCandless
+                if sdl2.SDL_Init(sdl2.SDL_INIT_AUDIO) != 0:
+                    raise RuntimeError('failed to init audio')
+
+                p = ReadAIFF(piano_files[val])
+                spec = sdl2.SDL_AudioSpec(
+                    p.a.getframerate(),
+                    sdl2.AUDIO_S16MSB,
+                    p.a.getnchannels(),
+                    512,
+                    sdl2.SDL_AudioCallback(p.playNextChunk)
+                )
+
+                devID = sdl2.SDL_OpenAudioDevice(None, 0, spec, None, 0)
+                if devID == 0:
+                    raise RuntimeError('failed to open audio device')
+
+                # Tell audio device to start playing:
+                sdl2.SDL_PauseAudioDevice(devID, 0)
+
+                # Wait until all samples are done playing
+                p.done.wait(timeout=interval / 100)
+
+                sdl2.SDL_CloseAudioDevice(devID)
                 
+                #devID = sdl2.SDL_OpenAudioDevice(None, 0, spec, None, 0)
+                #if devID == 0:
+                #    raise RuntimeError('failed to open audio device')
+
+                # Tell audio device to start playing:
+                #sdl2.SDL_PauseAudioDevice(sdl2.SDL_OpenAudioDevice(None, 0, spec, None, 0), 0)
+
+
+
                 #if title == 'Bubble Sort':
                 #    if len(xs[-1]) == 2:
                 #        if not desc_add:
@@ -697,7 +746,7 @@ def animate(algorithm, n, interval=1, seed=True, metrics=True, *args, **kwargs):
         #desc += desc_add
         if metrics:
             text.set_text(desc +
-            f'\nn = {len(xs) - 1}\n\
+            f'n = {len(xs) - 1}\n\
 {comparisons} comparisons')
 #time elapsed: {format(time.time() - start, ".3f")}s')
         #desc = desc[:desc_len]
@@ -715,26 +764,26 @@ def get_algo_desc(algorithm):
     result = ''
     if name == 'bubble_sort':
         result += 'Bubble sort swaps adjacent out-of-order elements\n\n'
-        result += 'Runtime: $\mathregular{O(n^2)}$, Memory: O(1), Stable?: Yes'
+        result += 'Runtime: $\mathregular{O(n^2)}$, Memory: O(1), Stable?: Yes\n'
     elif name == 'selection_sort':
         result += 'Selection sort finds the next smallest element\nand puts it into place\n\n'
-        result += 'Runtime: $\mathregular{O(n^2)}$, Memory: O(1), Stable?: No'
+        result += 'Runtime: $\mathregular{O(n^2)}$, Memory: O(1), Stable?: No\n'
     elif name == 'insertion_sort':
         result += 'Insertion sort builds a sorted list one element at a time,\ninserting the next element into its sorted section\n\n'
-        result += 'Runtime: $\mathregular{O(n^2)}$, Memory: O(1), Stable?: Yes'
+        result += 'Runtime: $\mathregular{O(n^2)}$, Memory: O(1), Stable?: Yes\n'
     elif name == 'merge_sort':
         result += 'Mergesort recursively divides the list into sublists\nand compares elements from two sublists\nto merge them together into one sublist\n\n'
-        result += 'Runtime: O(nlogn), Memory: O(n), Stable?: Yes'
+        result += 'Runtime: O(nlogn), Memory: O(n), Stable?: Yes\n'
     elif name == 'quicksort':
         result += 'Quicksort recursively selects a pivot element\nand partitions the list into two sublists:\nValues less than the pivot and values greater than the pivot\n\n'
-        result += 'Expected Runtime: O(nlogn), Memory: O(logn), Stable?: No'
+        result += 'Expected Runtime: O(nlogn), Memory: O(logn), Stable?: No\n'
     elif name == 'heapsort':
         result += 'Heapsort maintains the unsorted section of the list\nas a max-heap and extracts and inserts the root of the heap\ninto place on each iteration\n\n'
-        result += 'Runtime: O(nlogn), Memory: O(1), Stable?: No'
+        result += 'Runtime: O(nlogn), Memory: O(1), Stable?: No\n'
     elif name == 'introsort':
         result += 'Introsort is a hybrid of Insertion sort, Quicksort, and Heapsort\n\n'
-        result += 'Runtime: O(nlogn), Memory: O(logn), Stable?: No'
+        result += 'Runtime: O(nlogn), Memory: O(logn), Stable?: No\n'
     elif name == 'timsort':
         result += 'Timsort is a hybrid of Insertion sort and Merge sort\n\n'
-        result += 'Runtime: O(nlogn), Memory: O(n), Stable?: Yes'
+        result += 'Runtime: O(nlogn), Memory: O(n), Stable?: Yes\n'
     return result
